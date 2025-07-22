@@ -1,26 +1,32 @@
 # ScriptaVox
 
-**Memoriza la Palabra de Dios, Versículo a Versículo.**
+**Memorize the Word of God, Verse by Verse.**
+
+**View the Live Application:** [**https://scriptavox.up.railway.app/**](https://scriptavox.up.railway.app/)
+
+---
+
+![ScriptaVox Screenshot](https://i.imgur.com/your-screenshot-url.png) <!-- IMPORTANT! Replace this URL with a screenshot of your application. -->
+
+## Overview
 
 ScriptaVox is a modern web application designed to help users learn, practice, and retain Bible verses through an engaging, interactive, and scientifically-backed process. Inspired by the best features of learning apps like Duolingo and Anki, ScriptaVox transforms scripture memorization into a delightful and effective daily habit.
-
-![ScriptaVox Welcome Page](https//i.imgur.com/your-screenshot-url.png) <!-- It's highly recommended to add a screenshot of your app here! -->
 
 ## Core Features
 
 Our vision is built on three core pillars:
 
-- **🧠 Aprende (Learn):** A multi-stage learning pipeline guides users from their first encounter with a verse to full comprehension. This includes:
+- 🧠 **Learn:** A multi-stage learning pipeline guides users from their first encounter with a verse to full comprehension. This includes:
 
     - **Study Mode:** Simple, focused reading to build familiarity.
     - **Word Bank:** An interactive, Duolingo-style exercise to construct the verse from jumbled words, teaching sentence structure and flow.
 
-- **🗣️ Recita (Recite):** This is the soul of ScriptaVox. Users don't just type—they speak the Word out loud.
+- 🗣️ **Recite:** The soul of ScriptaVox. Users don't just type—they speak the Word out loud.
 
     - **Practice Recitation:** A low-pressure practice mode with first-letter prompts to build confidence.
     - **Intelligent Feedback:** Using the Web Speech API, the app provides a percentage-based accuracy score and a detailed visual "diff" of the user's recitation, highlighting correct, missed, and added words.
 
-- **❤️ Retén (Retain):** Powered by a Spaced Repetition System (SRS), our "Anki brain" ensures long-term retention.
+- ❤️ **Retain:** Powered by a Spaced Repetition System (SRS), our "Anki brain" ensures long-term retention.
     - **Daily Review:** The app intelligently schedules verses for review at scientifically determined intervals (1 day, 3 days, 1 week, etc.).
     - **Self-Assessment:** Users rate their recall ("Again," "Hard," "Good"), which tunes the algorithm for the next review, personalizing their learning journey.
 
@@ -32,7 +38,7 @@ ScriptaVox is built on a modern, robust technology stack:
 - **Frontend:** Vue.js 3 with TypeScript (using the `<script setup>` syntax)
 - **Styling:** Tailwind CSS
 - **UI Components:** [Shadcn/Vue](https://www.shadcn-vue.com/) for beautiful, accessible, and theme-able components.
-- **Stack:** The TALL stack philosophy, adapted with Vue & Inertia.js for a seamless single-page application experience.
+- **Architecture:** The TALL stack philosophy, adapted with Vue & Inertia.js for a seamless single-page application experience.
 - **Database:** MySQL
 - **Deployment:** Configured for deployment on [Railway](https://railway.app/).
 
@@ -98,7 +104,7 @@ Follow these instructions to get a local development environment up and running.
     The application includes a system to fetch and seed the Bible data from an external API.
 
     **Step 7a: Fetch and Cache the Data (Run this only once)**
-    This command will download all ~1,189 chapters and save them locally. It will take a few minutes.
+    This command will download all ~1,189 chapters and save them locally. It will take several minutes.
 
     ```bash
     php artisan bible:fetch-api
