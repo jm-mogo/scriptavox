@@ -143,7 +143,18 @@ const features: Feature[] = [
 
         <!-- Footer -->
         <footer class="w-full border-t">
-            <div class="container mx-auto flex h-14 max-w-7xl items-center justify-center text-sm text-muted-foreground">
+            <div class="container mx-auto flex h-auto max-w-7xl flex-col items-center justify-center gap-1 px-4 py-4 text-sm text-muted-foreground">
+                <p>
+                    Desarrollado por
+                    <a
+                        href="https://github.com/jm-mogo"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-medium underline underline-offset-4 hover:text-primary"
+                    >
+                        José Mogollón
+                    </a>
+                </p>
                 <p>© {{ new Date().getFullYear() }} ScriptaVox. Todos los derechos reservados.</p>
             </div>
         </footer>
