@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('verse_id')->constrained()->onDelete('cascade');
-            $table->foreignId('lesson_id')->nullable()->constrained()->onDelete('set null');
+            // $table->foreignId('lesson_id')->nullable()->constrained()->onDelete('set null');
             $table->string('status')->default('new');
             $table->dateTime('review_at');
             $table->unsignedInteger('interval')->default(1);
