@@ -36,3 +36,34 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+export interface Book {
+    id: number;
+    title: string;
+    // You might add other properties here later if needed
+    // abbreviation?: string;
+    // book_number?: number;
+}
+
+export interface Verse {
+    id: number;
+    text: string;
+    chapter: number;
+    verse_number: number;
+    book: Book; // A verse has one book
+}
+
+// =====================================================================
+//  THE NEWLY ADDED TYPE IS HERE
+// =====================================================================
+export interface UserVerseProgress {
+    id: number;
+    status: 'new' | 'learning' | 'reviewing' | 'mastered';
+    review_at: string; // ISO 8601 date string
+    interval: number;
+    ease_factor: number;
+    verse: Verse; // A progress record has one verse
+    // Add other properties from your Laravel model if you pass them
+    // user_id: number;
+    // created_at: string;
+}
