@@ -62,13 +62,8 @@ const features: Feature[] = [
 
         <!-- Main Content -->
         <main class="flex-1">
-            <!-- ========================================================================= -->
-            <!-- THE FIX IS APPLIED TO EACH SECTION'S INNER DIV -->
-            <!-- ========================================================================= -->
-
             <!-- Hero Section -->
-            <section class="w-full py-12 md:py-24 lg:py-32">
-                <!-- This inner div now handles max-width, centering, and padding -->
+            <section class="w-full py-18 md:py-24 lg:py-32">
                 <div class="container mx-auto max-w-7xl px-4 md:px-6">
                     <div class="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
                         <div class="flex flex-col justify-center space-y-4">
@@ -98,6 +93,20 @@ const features: Feature[] = [
                     </div>
                 </div>
             </section>
+
+            <!-- ========================================================================= -->
+            <!-- NEW INSPIRATIONAL VERSE SECTION -->
+            <!-- ========================================================================= -->
+            <section class="w-full border-y bg-background py-12 md:py-20">
+                <div class="container mx-auto max-w-3xl px-4 text-center md:px-6">
+                    <blockquote class="text-2xl leading-relaxed font-medium text-foreground md:text-3xl">
+                        “y las repetirás a tus hijos, y hablarás de ellas estando en tu casa, y andando por el camino, y al acostarte, y cuando te
+                        levantes.”
+                    </blockquote>
+                    <footer class="mt-4 text-lg font-semibold text-muted-foreground">— Deuteronomio 6:7 (RV1960)</footer>
+                </div>
+            </section>
+            <!-- ========================================================================= -->
 
             <!-- Features Section -->
             <section class="w-full bg-muted py-12 md:py-24 lg:py-32 dark:bg-slate-800">
