@@ -8,6 +8,8 @@ use App\Http\Controllers\UserVerseProgressController;
 use App\Http\Controllers\PracticeController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StatsController;
+use App\Http\Controllers\MemorizeController;
+use App\Http\Controllers\MemorizePassageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +46,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/my-verses', [UserVerseProgressController::class, 'index'])->name('my-verses.index');
     Route::post('/my-verses', [UserVerseProgressController::class, 'store'])->name('my-verses.store');
     // (A route for deleting a verse from the list would go here later, e.g., Route::delete(...))
+
+    // Memorize a whole chapter (progressive word hiding)
+    Route::get('/memorize/{book}/{chapter}', [MemorizeController::class, 'chapter'])
+        ->whereNumber('chapter')
+        ->name('memorize.chapter');
+
+    // Saved verse ranges (resumable memorization)
+    Route::get('/passages', [MemorizePassageController::class, 'index'])->name('passages.index');
+    Route::post('/passages', [MemorizePassageController::class, 'store'])->name('passages.store');
+    Route::get('/passages/{passage}', [MemorizePassageController::class, 'show'])->name('passages.show');
+    Route::patch('/passages/{passage}', [MemorizePassageController::class, 'update'])->name('passages.update');
 
     // Learning a New Verse (Multi-stage process)
     Route::get('/practice/{verse}', [PracticeController::class, 'show'])->name('practice.show');

@@ -1,88 +1,103 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
-// Shadcn Components
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// This is the correct props definition, matching what the controller sends.
-interface Stats {
-    total_learned: number;
-    mastered_count: number;
-    review_count: number;
+interface BookOption {
+    id: number;
+    title: string;
+    chapter_count: number;
 }
+
+interface PassageRow {
+    id: number;
+    book: string;
+    chapter: number;
+    verse_from: number;
+    verse_to: number;
+    hide_level: number;
+}
+
 const props = defineProps<{
-    stats: Stats;
+    books: BookOption[];
+    passages: PassageRow[];
+    review_count: number;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '',
-    },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Inicio', href: '/dashboard' }];
+
+const bookId = ref<number | null>(props.books[0]?.id ?? null);
+const chapter = ref<number>(1);
+
+const selectedBook = computed(() => props.books.find((b) => b.id === bookId.value) ?? null);
+const chapterOptions = computed(() => Array.from({ length: selectedBook.value?.chapter_count ?? 0 }, (_, i) => i + 1));
+
+// Keep the chapter inside the selected book's range.
+watch(bookId, () => (chapter.value = 1));
+
+const memorizeHref = computed(() => (bookId.value ? `/memorize/${bookId.value}/${chapter.value}` : '#'));
+
+const range = (p: PassageRow) => (p.verse_from === p.verse_to ? `${p.verse_from}` : `${p.verse_from}-${p.verse_to}`);
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Inicio" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
-            <!-- Stat Cards -->
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Repasos Pendientes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stats.review_count }}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Versículos Aprendidos</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stats.total_learned }}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Versículos Dominados</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stats.mastered_count }}</div>
-                    </CardContent>
-                </Card>
-            </div>
+        <div class="mx-auto flex w-full max-w-2xl flex-col gap-4 p-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Elige qué memorizar</CardTitle>
+                    <CardDescription>Selecciona un libro y un capítulo, y luego guarda el rango de versículos que quieras.</CardDescription>
+                </CardHeader>
+                <CardContent class="flex flex-wrap items-end gap-3">
+                    <label class="flex min-w-40 flex-1 flex-col text-sm">
+                        Libro
+                        <select v-model.number="bookId" class="rounded-md border bg-background p-2">
+                            <option v-for="book in books" :key="book.id" :value="book.id">{{ book.title }}</option>
+                        </select>
+                    </label>
+                    <label class="flex flex-col text-sm">
+                        Capítulo
+                        <select v-model.number="chapter" class="rounded-md border bg-background p-2">
+                            <option v-for="c in chapterOptions" :key="c" :value="c">{{ c }}</option>
+                        </select>
+                    </label>
+                    <Button as-child :disabled="!bookId">
+                        <Link :href="memorizeHref">Memorizar</Link>
+                    </Button>
+                </CardContent>
+            </Card>
 
-            <!-- Daily Review Card -->
-            <div class="mt-6">
-                <Card class="mx-auto max-w-3xl text-center">
-                    <CardHeader>
-                        <CardTitle class="text-2xl">Repaso Diario</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div v-if="stats.review_count > 0">
-                            <p class="text-lg text-muted-foreground">
-                                Tienes <span class="font-bold text-primary">{{ stats.review_count }}</span> versículos listos para repasar hoy.
-                            </p>
-                            <!-- This route now correctly links to the start of the review flow -->
-                            <Link :href="route('review.start')">
-                                <Button size="lg" class="mt-6">Comenzar Repaso</Button>
-                            </Link>
-                        </div>
-                        <div v-else>
-                            <p class="text-lg text-muted-foreground">¡Excelente! No tienes repasos pendientes por hoy.</p>
-                            <Link :href="route('explore.show')">
-                                <Button variant="secondary" class="mt-6">Aprender un Nuevo Versículo</Button>
-                            </Link>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Mis pasajes</CardTitle>
+                    <CardDescription>Continúa donde lo dejaste.</CardDescription>
+                </CardHeader>
+                <CardContent class="flex flex-col gap-2">
+                    <p v-if="passages.length === 0" class="text-muted-foreground">Todavía no tienes pasajes guardados.</p>
+                    <Button v-for="p in passages" :key="p.id" as-child variant="outline" class="justify-between">
+                        <Link :href="`/passages/${p.id}`">
+                            <span>{{ p.book }} {{ p.chapter }}:{{ range(p) }}</span>
+                            <span class="text-muted-foreground">{{ p.hide_level }}% oculto</span>
+                        </Link>
+                    </Button>
+                    <Link href="/passages" class="text-sm underline">Ver todos mis pasajes</Link>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardContent class="flex items-center justify-between py-4">
+                    <span>Para repasar hoy: {{ review_count }}</span>
+                    <Button as-child variant="secondary">
+                        <Link href="/review/start">Repasar</Link>
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
     </AppLayout>
 </template>
