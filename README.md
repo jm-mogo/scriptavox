@@ -4,6 +4,8 @@
 
 **View the Live Application:** [**https://scriptavox.up.railway.app/**](https://scriptavox.up.railway.app/)
 
+**Documentation:** [**docs/README.md**](docs/README.md)
+
 ---
 
 ![ScriptaVox Screenshot](https://i.imgur.com/your-screenshot-url.png) <!-- IMPORTANT! Replace this URL with a screenshot of your application. -->

@@ -22,6 +22,8 @@ declare global {
 const props = defineProps<{
     verse: VerseType;
     prompt?: string; // Optional prompt, like first-letters
+    // Optional per-verse breakdown for a passage; when present, results are shown per verse.
+    verses?: { verse_number: number; text: string }[];
 }>();
 
 const emit = defineEmits<{
@@ -164,6 +166,141 @@ const compareVerses = () => {
     });
 };
 
+// --- Per-verse results ---
+// Align the spoken words to the original word sequence, then score each verse.
+type VerseStatus = 'ok' | 'partial' | 'missed';
+interface VerseRow {
+    verse_number: number;
+    status: VerseStatus;
+    percent: number;
+}
+
+// Shared alignment: which normalized original words were spoken.
+const alignment = computed(() => {
+    const sources = props.verses && props.verses.length > 0 ? props.verses : [{ verse_number: 0, text: props.verse.text }];
+
+    const words: { verse: number; word: string }[] = [];
+    sources.forEach((v) => {
+        normalizeText(v.text)
+            .split(/\s+/)
+            .filter((w) => w.length > 0)
+            .forEach((word) => words.push({ verse: v.verse_number, word }));
+    });
+
+    const spoken = normalizeText(transcribedText.value)
+        .split(/\s+/)
+        .filter((w) => w.length > 0);
+
+    const matched = new Array<boolean>(words.length).fill(false);
+    let position = 0;
+    for (const part of Diff.diffArrays(
+        words.map((w) => w.word),
+        spoken,
+    )) {
+        const length = part.value.length;
+        if (part.added) continue; // spoken but not in the verse
+        if (part.removed) {
+            position += length; // in the verse but not spoken
+            continue;
+        }
+        for (let k = 0; k < length; k++) matched[position + k] = true;
+        position += length;
+    }
+
+    return { words, matched };
+});
+
+// Original tokens with punctuation and capitals, each marked as spoken or missed.
+const originalTokens = computed<{ text: string; state: 'match' | 'miss' | 'neutral' }[]>(() => {
+    const { matched } = alignment.value;
+    const sources = props.verses && props.verses.length > 0 ? props.verses.map((v) => v.text) : [props.verse.text];
+
+    const tokens: { text: string; state: 'match' | 'miss' | 'neutral' }[] = [];
+    let position = 0;
+    sources.forEach((text) => {
+        text.split(/\s+/)
+            .filter((raw) => raw.length > 0)
+            .forEach((raw) => {
+                if (normalizeText(raw).length === 0) {
+                    tokens.push({ text: raw, state: 'neutral' }); // pure punctuation
+                    return;
+                }
+                tokens.push({ text: raw, state: matched[position] ? 'match' : 'miss' });
+                position++;
+            });
+    });
+    return tokens;
+});
+
+// Per-verse tokens (raw text with punctuation) colored by alignment.
+type WordToken = { text: string; state: 'match' | 'miss' | 'neutral' };
+const tokensByVerse = computed<Record<number, WordToken[]>>(() => {
+    const { matched } = alignment.value;
+    const sources = props.verses && props.verses.length > 0 ? props.verses : [{ verse_number: 0, text: props.verse.text }];
+
+    const result: Record<number, WordToken[]> = {};
+    let position = 0;
+    sources.forEach((v) => {
+        const tokens: WordToken[] = [];
+        v.text
+            .split(/\s+/)
+            .filter((raw) => raw.length > 0)
+            .forEach((raw) => {
+                if (normalizeText(raw).length === 0) {
+                    tokens.push({ text: raw, state: 'neutral' });
+                    return;
+                }
+                tokens.push({ text: raw, state: matched[position] ? 'match' : 'miss' });
+                position++;
+            });
+        result[v.verse_number] = tokens;
+    });
+    return result;
+});
+
+const verseRows = computed<VerseRow[]>(() => {
+    if (!props.verses || props.verses.length === 0) return [];
+
+    const { words, matched } = alignment.value;
+
+    return props.verses.map((v) => {
+        const indexes = words.map((w, i) => (w.verse === v.verse_number ? i : -1)).filter((i) => i >= 0);
+        const total = indexes.length || 1;
+        const ok = indexes.filter((i) => matched[i]).length;
+        const ratio = ok / total;
+        const status: VerseStatus = ratio === 0 ? 'missed' : ratio >= 0.9 ? 'ok' : 'partial';
+        return { verse_number: v.verse_number, status, percent: Math.round(ratio * 100) };
+    });
+});
+
+// Collapse consecutive fully missed verses into one line: "Versículo N omitido" / "Versículos N-M omitidos".
+type ResultLine =
+    | { kind: 'verse'; verse_number: number; status: VerseStatus; percent: number; tokens: WordToken[] }
+    | { kind: 'missed-range'; from: number; to: number };
+
+const resultLines = computed<ResultLine[]>(() => {
+    const lines: ResultLine[] = [];
+    for (const row of verseRows.value) {
+        const last = lines[lines.length - 1];
+        if (row.status === 'missed') {
+            if (last && last.kind === 'missed-range' && last.to === row.verse_number - 1) {
+                last.to = row.verse_number;
+            } else {
+                lines.push({ kind: 'missed-range', from: row.verse_number, to: row.verse_number });
+            }
+        } else {
+            lines.push({
+                kind: 'verse',
+                verse_number: row.verse_number,
+                status: row.status,
+                percent: row.percent,
+                tokens: tokensByVerse.value[row.verse_number] ?? [],
+            });
+        }
+    }
+    return lines;
+});
+
 const tryAgain = () => {
     showResult.value = false;
 };
@@ -171,14 +308,21 @@ const tryAgain = () => {
 
 <template>
     <!-- Browser Not Supported View -->
-    <div v-if="!isSpeechRecognitionSupported" class="w-full">
-        <Alert variant="destructive">
-            <AlertTitle class="font-bold">Navegador no compatible</AlertTitle>
+    <!-- Typed fallback when voice recognition is unavailable -->
+    <div v-if="!isSpeechRecognitionSupported && !showResult" class="flex w-full flex-col gap-4">
+        <Alert>
+            <AlertTitle class="font-bold">Voz no disponible en este navegador</AlertTitle>
             <AlertDescription>
-                La función de reconocimiento de voz no es compatible con tu navegador actual. Por favor, intenta usar Google Chrome o Microsoft Edge
-                para una experiencia completa.
+                El reconocimiento de voz funciona mejor en Google Chrome o Microsoft Edge. Puedes escribir el versículo de memoria.
             </AlertDescription>
         </Alert>
+        <textarea
+            v-model="transcribedText"
+            rows="4"
+            class="w-full rounded-md border bg-background p-3 text-base"
+            placeholder="Escribe el versículo de memoria..."
+        ></textarea>
+        <Button @click="compareVerses" :disabled="!transcribedText.trim()" class="w-full">Comprobar</Button>
     </div>
 
     <!-- Main Engine View (before showing results) -->
@@ -211,18 +355,43 @@ const tryAgain = () => {
             <AlertDescription> <strong>Tú dijiste:</strong> "{{ transcribedText }}" </AlertDescription>
         </Alert>
         <Progress :model-value="accuracy" class="w-full" />
-        <div class="w-full rounded-md bg-muted p-4 text-lg leading-relaxed">
+        <div v-if="verses && verses.length > 0" class="flex w-full flex-col gap-2">
+            <template v-for="(line, index) in resultLines" :key="index">
+                <div v-if="line.kind === 'missed-range' && line.from === line.to" class="rounded-md bg-red-100 p-3 text-red-700">
+                    Versículo {{ line.from }} omitido
+                </div>
+                <div v-else-if="line.kind === 'missed-range'" class="rounded-md bg-red-100 p-3 text-red-700">
+                    Versículos {{ line.from }}-{{ line.to }} omitidos
+                </div>
+                <div v-else class="flex flex-col gap-2 rounded-md p-3" :class="line.status === 'ok' ? 'bg-green-50' : 'bg-amber-50'">
+                    <div class="flex items-center justify-between text-sm font-semibold">
+                        <span>Versículo {{ line.verse_number }}</span>
+                        <span>{{ line.percent }}%</span>
+                    </div>
+                    <p class="text-lg leading-relaxed">
+                        <span
+                            v-for="(token, t) in line.tokens"
+                            :key="t"
+                            class="mr-1 inline-block"
+                            :class="{
+                                'text-green-700': token.state === 'match',
+                                'rounded bg-red-100 px-1 text-red-600 line-through': token.state === 'miss',
+                            }"
+                        >
+                            {{ token.text }}
+                        </span>
+                    </p>
+                </div>
+            </template>
+        </div>
+
+        <div v-else class="w-full rounded-md bg-muted p-4 text-lg leading-relaxed">
             <p class="mb-2 text-sm font-semibold text-muted-foreground">Comparación visual:</p>
-            <span
-                v-for="(part, index) in comparisonResult"
-                :key="index"
-                :class="{
-                    'text-green-600': !part.added && !part.removed,
-                    'bg-red-100 text-red-600 line-through': part.removed,
-                    'rounded bg-green-100 px-1 text-green-800': part.added,
-                }"
-            >
-                {{ part.value }}
+            <span v-for="(token, index) in originalTokens" :key="index" class="mr-1 inline-block" :class="{
+                'text-green-600': token.state === 'match',
+                'bg-red-100 text-red-600 line-through rounded px-1': token.state === 'miss',
+            }">
+                {{ token.text }}
             </span>
         </div>
         <!-- The "Recite Again" button has been moved to the parent component -->
