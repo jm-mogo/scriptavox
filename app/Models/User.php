@@ -22,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'google_id',
+        'avatar',
     ];
 
     /**
@@ -62,5 +64,13 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Verse ranges this user saved to memorize.
+     */
+    public function memorizePassages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MemorizePassage::class);
     }
 }
